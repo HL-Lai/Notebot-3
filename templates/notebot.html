@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteWriter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-container {
+            display: flex;
+            align-items: flex-start;
+        }
+        /* .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            flex: auto;
+        }*/
+        .container {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .container::after {
+            content: "";
+            display: table;
+            clear: both; /* Clear floats if necessary */
+        }
+        #notewriterFooter {
+            all: unset;
+            margin: 10px;
+            padding: 10px;
+            color: gray;
+            font-style: italic;
+            width: 100%;
+            bottom: 0;
+            line-height: 0.25;
+        }
+        /* textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        } */
+        #notesContainer {
+            flex: 1;
+            border-radius: 15px;
+            transition: background 0.25s linear;
+            -webkit-transition: background 0.25s linear;
+        }
+        #notesContainer:hover {
+            background-color: white;
+            border-color: pink;
+        }
+        #promptContainer {
+            width: 300px;
+            background-color: rgb(204, 234, 247);
+            border-radius: 10px;
+            border-width: 0;
+            box-shadow: inset 0px 0px 5px 5px #f4f4f4;
+        }
+        #settingsContainer {
+            opacity: 0;
+            height: auto;
+            overflow: hidden;
+            transition: opacity 0.3s, height 0.3s;
+        }
+
+        #settingsContainer.show {
+            opacity: 1;
+            height: auto;
+        }
+        pre {
+            white-space: pre-wrap;
+        }
+        textarea {
+            width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            overflow: hidden;
+            resize: none;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        #chatbotPrompt {
+            overflow-y: scroll;
+        }
+        /* #chatbotPrompt {
+            height: ;
+        } */
+        select {
+            width: 100%;
+            height: 200%;
+            padding: 3px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button {
+            transition: background 0.5s linear;
+            -webkit-transition: background 0.5s linear;
+            background-color: lightgray;
+        }
+        button:hover {
+            background-color: rgb(161, 161, 161);
+        }
+        #generateNote {
+            background-color: rgb(218, 255, 163);
+        }
+        #generateNote:hover {
+            background-color: rgb(185, 241, 101);
+        }
+        #saveButton {
+            background-color: rgb(236, 199, 199);
+        }
+        #saveButton:hover {
+            background-color: rgb(255, 152, 152);
+        }
+        #saveButton:active{
+            background-color: red;
+        }
+        #settingButton {
+            background-color: slategray;
+            color: rgba(255, 255, 255, 0.856);
+        }
+        #settingButton:hover {
+            background-color: rgb(134, 146, 158);
+        }
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            z-index: 1;
+        }
+        .code-container {
+            position: relative;
+            margin-bottom: 20px;
+            overflow-x: scroll;
+            overflow-wrap: break-word;
+        }
+        pre {
+            position: relative;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background-color: #f5f5f5;
+            z-index: 0;
+            /* overflow-wrap: break-word; */
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #000;
+            animation: blink 1s infinite;
+            margin-left: 5px;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .glow-effect {
+            background: hsl(0, 0%, 100%);
+            padding: 16px 24px;
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.01);
+
+            &::after {
+                position: absolute;
+                content: "";
+                top: 10px;
+                left: 0;
+                right: 0;
+                z-index: -1;
+                height: 100%;
+                width: 100%;
+                transform: scale(0.9) translateZ(0);
+                filter: blur(15px);
+                background: linear-gradient(
+                to left,
+                #ff5770,
+                #e4428d,
+                #c42da8,
+                #9e16c3,
+                #6501de,
+                #9e16c3,
+                #c42da8,
+                #e4428d,
+                #ff5770
+                );
+                background-size: 200% 200%;
+                animation: animateGlow 1.5s ease-in-out infinite;
+                opacity: 0.5;
+                animation-delay: 0.5s;
+            }
+            }
+
+            @keyframes animateGlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
+            }
+
+            @keyframes fadeInFromTop {
+                0% {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .fade-in {
+                animation: fadeInFromTop 1s ease-out;
+            }
+
+            /* .shine {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .shine:after {
+                content:'';
+                top:0;
+                width:100%;
+                height:100%;
+                position: absolute;
+                z-index:1;
+                transform: translateY(-100%);
+                animation: slide 1s forwards;
+                
+
+                background: -moz-linear-gradient(top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(128,186,232,0) 99%, rgba(125,185,232,0) 100%);
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,0)), color-stop(50%,rgba(255,255,255,0.8)), color-stop(99%,rgba(128,186,232,0)), color-stop(100%,rgba(125,185,232,0)));
+                background: -webkit-linear-gradient(top, rgba(255,255,255,0) 0%,rgba(255,255,255,0.8) 50%,rgba(128,186,232,0) 99%,rgba(125,185,232,0) 100%);
+                background: linear-gradient(to bottom, rgba(255,255,255,0) 0%,rgba(255,255,255,0.8) 50%,rgba(128,186,232,0) 99%,rgba(125,185,232,0) 100%);
+            }
+            @keyframes slide {
+                0% {transform:translateY(-100%);}
+                100% {transform:translateY(100%);}
+            } */
+
+            .notification {
+                display: none;
+                position: fixed;
+                top: 10px;
+                left: 45%;
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px;
+                border-radius: 3px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 1s linear;
+            }
+            .notification.show {
+                display: block;
+                opacity: 0.95;
+            }
+
+    </style>
+
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/theme.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        function prompt_default(n) {
+            switch(n) {
+                case 1:
+                    return "You are a helpful assistant who helps to write notes. You may also answer user's questions if they have query. You write or correct notes according to the user's input. Keep your response concise. Answer directly without any polite phrases or conclusions. You may have a title, but don't write any openings before the title, but after the title. If there is title, use <h1> (the largest heading) for the title. Use latex for any math symbols. Use 4 spaces for any indentations. Better use <ol> and <ul> tags for lists. Use HTML tags for tables."
+                case 2:
+                    return "Answer user's query with HTML (without code snippet)."
+                case 3:
+                    return "Write a webpage according to the user's query. Do not use code snippet. Start with HTML directly. Please also add necessary CSS."
+            }
+        }
+        function history_default() {
+            return [{
+                role: "system",
+                content: prompt_default(1)
+            }];
+        }
+        window.onload = function() {
+            document.getElementById('userPrompt').focus();
+        };
+        document.addEventListener('DOMContentLoaded', function() {
+            var chatbotPrompt = document.getElementById('chatbotPrompt');
+            chatbotPrompt.value = history_default()[0].content;
+            // autoResize(chatbotPrompt);  // Adjust height based on content
+        });
+
+    </script>
+    <script>
+        function copyToClipboard(button) {
+            var codeContainer = button.closest('.code-container');
+            var preElement = codeContainer.querySelector('pre');
+            var range = document.createRange();
+            range.selectNodeContents(preElement);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            showNotification();
+        }
+
+        function showNotification() {
+            var notification = document.getElementById('notification');
+            notification.classList.add('show');
+            setTimeout(function() {
+                notification.classList.remove('show');
+            }, 2000); // Hide after 2 seconds
+        }
+    </script>
+    <script>
+        function simulateTyping(message, delay) {
+            const botMessage = document.getElementById('notesContainer');
+            // botMessage.innerHTML = '<i>' + 'Bot is typing' + '</i>' + '<span class="typing-indicator"></span>';
+
+            setTimeout(() => {
+                botMessage.innerHTML = ''; // Clear typing indicator
+                let index = 0;
+                var s = '';
+                const typingInterval = setInterval(() => {
+                    if (index < message.length) {
+                        s += message.charAt(index)
+                        botMessage.innerHTML = s;
+                        index++;
+                    } else {
+                        // botMessage.innerHTML = message
+                        clearInterval(typingInterval);
+                    }
+                    renderMathInElement(notesContainer, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '\\begin{align*}', right: '\\end{align*}', display: true},
+                        {left: '\\begin{aligned}', right: '\\end{aligned}', display: true}
+                    ],
+                    throwOnError: false
+                    });
+                }, 10);
+            }, delay); // Typing delay before message
+        }
+
+    </script>
+    <script>
+        function saveNote() {
+            const sessionId = window.location.pathname.split('/').pop();
+            const filename = prompt("Filename (leave empty to save as markdown):");
+            fetch(`/save-note/${sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filename: filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.status);
+            });
+        }
+
+        function clearHistory() {
+            const sessionId = window.location.pathname.split('/').pop();
+            fetch(`/generate-note/${sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: 'clear' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // alert(data.status);
+                alert("History cleared")
+                const notesContainer = document.getElementById('notesContainer');
+                notesContainer.innerHTML = '<i>your notes will be here...</i>';
+                notesContainer.classList.remove('glow-effect')
+            });
+        }
+
+        function setPrompt(promptText) {
+            document.getElementById('chatbotPrompt').value = promptText;
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 10 + 'px';
+        }
+
+        function toggleSettings() {
+            const settingsContainer = document.getElementById('settingsContainer');
+            if (settingsContainer.classList.contains('show')) {
+                settingsContainer.classList.remove('show');
+                setTimeout(() => {
+                    settingsContainer.style.display = 'none';
+                }, 300); // Match this duration with the CSS transition duration
+            } else {
+                settingsContainer.style.display = 'block';
+                setTimeout(() => {
+                    settingsContainer.classList.add('show');
+                }, 10); // Small delay to ensure display is set before adding class
+            }
+        }
+
+    </script>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="container" id="notesContainer"><i>your notes will be here...</i></div>
+    <div class="container" id="promptContainer">
+        <h1>Note Generator</h1>
+        <textarea id="userPrompt" placeholder="Enter your prompt here..." oninput="autoResize(this)"></textarea>
+        <button id="generateNote">Generate Note</button>
+        <button onclick="clearHistory()">clear</button>
+        <p>
+        <button id="saveButton" onclick="saveNote()">Save Note</button>
+        </p>
+        <button id="settingButton" onclick="toggleSettings()">Settings</button>
+    </div>
+    <div class="container" id="settingsContainer" style="display: none; transition: opacity 0.5s ease;">
+        <h2>Settings</h2>
+        <label for="modelSelect">Model:</label>
+        <br>
+        <select id="modelSelect">
+            <option value="GPT-4o">GPT-4o</option>
+            <option value="GPT-4">GPT-4</option>
+            <option value="GPT-3.5">GPT-3.5</option>
+        </select>
+        <br>
+        <label for="chatbotPrompt">Chatbot Prompt:</label>
+        <br>
+        <!-- <input type="text" id="chatbotPrompt" value="Default initial prompt"> -->
+        <textarea id="chatbotPrompt" rows="25" cols="20" oninput="autoResize(this)"></textarea>
+        <br>
+        <label for="temperature">Temperature:</label>
+        <br>
+        <input type="number" id="temperature" min="0" max="1" step="0.1" value="0.7">
+
+        <hr>
+        <button class="promptDefaultButton" onclick="setPrompt(prompt_default(1))">Prompt 1</button>
+        <button class="promptDefaultButton" onclick="setPrompt(prompt_default(2))">Prompt 2</button>
+        <button class="promptDefaultButton" onclick="setPrompt(prompt_default(3))">Prompt 3</button>
+    </div>
+</div>
+
+
+<script>    
+    document.getElementById('userPrompt').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevent the default action (new line in textarea)
+            document.getElementById('generateNote').click();
+        }
+    });
+    document.getElementById('generateNote').addEventListener('click', async () => {
+        const sessionId = window.location.pathname.split('/').pop();
+        document.getElementById('userPrompt').blur();
+        const botMessage = document.getElementById('notesContainer');
+        botMessage.innerHTML = ''
+        botMessage.innerHTML = '<i>' + 'Bot is typing' + '</i>' + '<span class="typing-indicator"></span>';
+        botMessage.classList.add('glow-effect');
+        
+        const user_input = document.getElementById('userPrompt').value;
+        const prompt = document.getElementById('chatbotPrompt').value;
+        const model = document.getElementById('modelSelect').value;
+        var temperature = document.getElementById('temperature').value;
+        temperature = parseFloat(temperature);
+        if (!prompt) return;
+
+        const response = await fetch(`/generate-note/${sessionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_input: user_input, prompt: prompt, model: model, temperature: temperature })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const noteText = data.note;
+            displayNote(noteText);
+        } else {
+            console.error('Error fetching data:', response.statusText);
+        }
+    });
+
+    function displayNote(noteText, delay=1000) {
+        const notesContainer = document.getElementById('notesContainer');
+        notesContainer.innerHTML = '';
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = noteText;
+        tempContainer.classList.add('fade-in');
+        notesContainer.appendChild(tempContainer);
+        renderMathInElement(notesContainer, {
+        delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\begin{align*}', right: '\\end{align*}', display: true},
+            {left: '\\begin{aligned}', right: '\\end{aligned}', display: true}
+        ],
+        throwOnError: false
+        });
+        
+        // simulateTyping(noteText, delay)
+    }
+</script>
+
+    <footer id="notewriterFooter">
+        <p>&copy; 2024 NoteWriter. All rights reserved.</p>
+        <p>Developed by HL</p>
+    </footer>
+</body>
+</html>

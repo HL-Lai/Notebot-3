@@ -1,0 +1,31 @@
+/* Center all <h1> tags */
+h1 {
+    text-align: center;
+    font-size: 27px;
+}
+
+h2 {
+    line-height: 0.5;
+    font-size: 23px;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+/* Use Times New Roman for all text */
+body {
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Ensure sections print correctly without cutting them in half */
+@media print {
+    section {
+        page-break-inside: avoid; /* Avoid breaking inside sections */
+        page-break-after: always;  /* Start a new page after each section */
+    }
+    
+    p {
+        page-break-after: avoid; /* Avoid breaking after paragraphs */
+    }
+}
