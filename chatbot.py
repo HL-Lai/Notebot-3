@@ -5,23 +5,10 @@ import markdown
 # import traceback
 from dotenv import load_dotenv
 
-load_dotenv()
-
 def clean_string(input_string):
     # Use regex to keep only alphanumeric characters
     cleaned_string = re.sub(r'[^a-zA-Z0-9]', '', input_string)
     return cleaned_string
-
-api_key = os.getenv('OPENAI_API_KEY')
-if api_key is None:
-    key = input("Please input your api key: ").strip()
-    api_key = clean_string(key)
-
-client = openai.AzureOpenAI(
-    azure_endpoint=os.getenv('OPENAI_API_ENDPOINT', "https://api.hku.hk"),
-    api_key=api_key,
-    api_version="2025-01-01-preview"
-)
 
 def history_default():
     return [{"role": "system", "content": "You are a helpful assistant who helps to write notes. You may also answer user's questions if they have query. You write or correct notes according to the user's input. Keep your response concise. Answer directly without any polite phrases or conclusions. You may have a title, but don't write any openings before the title, but after the title. If there is title, use <h1> (the largest heading) for the title. Use latex for any math symbols. Use 4 spaces for any indentations. Better use <ol> and <ul> tags for lists. Use HTML tags for tables."}]
@@ -46,7 +33,10 @@ def is_image_file(filepath):
     return False
 
 def process_image(image_path):
-    if image_path and is_image_file(image_path):
+    if isinstance(image_path, str): # assume base64 already
+        image_data = f"data:image/;base64,{image_path}"
+        return image_data
+    elif image_path and is_image_file(image_path):
         with open(image_path, "rb") as image_file:
             mime, _ = mimetypes.guess_type(image_path)
             base64_str = base64.b64encode(image_file.read()).decode()
@@ -55,15 +45,29 @@ def process_image(image_path):
     else:
         raise ValueError("The provided file is not a valid image.")
 
-def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), defining=False):
+def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key='', defining=False):
+    # print(image[:20])
     model=select_model(model)
-    temperature = 1 if model == 'o4-mini' else temperature
+    temperature = 1 if model in ['o4-mini', 'DeepSeek-R1'] else temperature
+    print("KEY:", api_key)
+    if api_key is None:
+        key = input("Please input your api key: ").strip()
+        api_key = clean_string(key)
+
+    load_dotenv()
+
+    client = openai.AzureOpenAI(
+        azure_endpoint=os.getenv('OPENAI_API_ENDPOINT', "https://api.hku.hk"),
+        api_key=api_key,
+        api_version="2025-01-01-preview"
+    )
     
     history[0]['content'] = prompt
     if (model.startswith('gpt') or model == 'o4-mini') and image:
         # with open(image, "rb") as image_file:
         #     image = "data:image/jpeg;base64," + base64.b64encode(image_file.read()).decode()
         image = process_image(image)
+        print(image[:50])
         content = []
         if message:
             content.append({"type": "text", "text": message})

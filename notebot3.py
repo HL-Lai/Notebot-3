@@ -6,6 +6,7 @@ import uuid
 import markdown
 import traceback
 from chatbot import chatbot, history_default, save_to_html, save_to_md
+from dotenv import load_dotenv
 
 def md_to_html_for_input(text):
     # text = text.replace('\\', '\\\\')
@@ -65,9 +66,18 @@ def generate_note(session_id):
     history = session.get('chat_history', history_default())
     data = request.json
     user_input = data.get('user_input')
+    image_input = data.get('image_input')
     prompt = data.get('prompt')
     model = data.get('model')
     temperature = data.get('temperature')
+    keyUpdated = data.get('keyUpdated')
+
+    if keyUpdated:
+        api_key = keyUpdated
+    else:
+        load_dotenv()
+        api_key = os.getenv('OPENAI_API_KEY')
+
     if user_input.strip().lower() == 'clear':
         history = history_default()
         session['chat_history'] = history
@@ -75,7 +85,7 @@ def generate_note(session_id):
         return jsonify({'note': ''})
     else:
         try:
-            history, note = chatbot(user_input, model=model, prompt=prompt, temperature=temperature, history=history)
+            history, note = chatbot(message=user_input, image=image_input, model=model, prompt=prompt, temperature=temperature, history=history, api_key=api_key)
             session['chat_history'] = history
             print(note)
             html_note = md_to_html_for_input(note)
@@ -100,6 +110,46 @@ def save_note(session_id):
         save_to_html(history[-1]['content'], filename + '.html')
     print("Response saved.")
     return jsonify({'status': 'Response saved'})
+
+# @app.route('/set-api-key/<session_id>', methods=['POST'])
+# def set_api_key(session_id):
+#     if 'session_id' not in session or session['session_id'] != session_id:
+#         return jsonify({'error': 'Invalid session ID'}), 400
+#     data = request.json
+#     api_key = data.get('api_key', '')
+#     session['api_key'] = api_key
+#     # Optionally persist the key for next time (e.g., in a DB or file) if you want
+#     return jsonify({'status': 'API Key saved'})
+
+import os
+
+@app.route('/set-api-key/<session_id>', methods=['POST'])
+def set_api_key(session_id):
+    if 'session_id' not in session or session['session_id'] != session_id:
+        return jsonify({'error': 'Invalid session ID'}), 400
+
+    data = request.json
+    api_key = data.get('api_key', '')
+    session['api_key'] = api_key
+
+    env_path = '.env'
+    updated = False
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.startswith('OPENAI_API_KEY = ') and not updated:
+                    lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
+                    updated = True
+                elif not line.startswith('OPENAI_API_KEY = '):
+                    lines.append(line)
+            # If we never found the key, add it at the end
+    if not updated:
+        lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
+    with open(env_path, 'w') as f:
+        f.writelines(lines)
+
+    return jsonify({'status': 'API Key saved'})
 
 if __name__ == '__main__':
     # app.run(debug=True)

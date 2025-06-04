@@ -56,6 +56,7 @@
         } */
         #notesContainer {
             flex: 1;
+            max-width: 60%;
             border-radius: 15px;
             transition: background 0.25s linear;
             -webkit-transition: background 0.25s linear;
@@ -306,9 +307,9 @@
         function prompt_default(n) {
             switch(n) {
                 case 1:
-                    return "You are a helpful assistant who helps to write notes. You may also answer user's questions if they have query. You write or correct notes according to the user's input. Keep your response concise. Answer directly without any polite phrases or conclusions. You may have a title, but don't write any openings before the title, but after the title. If there is title, use <h1> (the largest heading) for the title. Use latex for any math symbols. Use 4 spaces for any indentations. Better use <ol> and <ul> tags for lists. Use HTML tags for tables."
+                    return "Answer user's query with HTML (without code snippet)."                    
                 case 2:
-                    return "Answer user's query with HTML (without code snippet)."
+                    return "You are a helpful assistant who helps to write notes. You may also answer user's questions if they have query. You write or correct notes according to the user's input. Keep your response concise. Answer directly without any polite phrases or conclusions. You may have a title, but don't write any openings before the title, but after the title. If there is title, use <h1> (the largest heading) for the title. Use latex for any math symbols. Use 4 spaces for any indentations. Better use <ol> and <ul> tags for lists. Use HTML tags for tables."
                 case 3:
                     return "Write a webpage according to the user's query. Do not use code snippet. Start with HTML directly. Please also add necessary CSS."
             }
@@ -417,6 +418,10 @@
                 const notesContainer = document.getElementById('notesContainer');
                 notesContainer.innerHTML = '<i>your notes will be here...</i>';
                 notesContainer.classList.remove('glow-effect')
+
+                document.getElementById('imageInput').value = '';
+                document.getElementById('imagePreview').innerHTML = '';
+                imageBase64 = null;
             });
         }
 
@@ -443,6 +448,24 @@
                 }, 10); // Small delay to ensure display is set before adding class
             }
         }
+        keyUpdated = false;
+        imageBase64 = null;
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                document.getElementById('imagePreview').innerHTML = "";
+                imageBase64 = null;
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Show preview
+                document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" style="max-width:200px;">`;
+                // Save base64 for later use
+                imageBase64 = e.target.result.split(',')[1]; // strip "data:image/png;base64,"
+            }
+            reader.readAsDataURL(file);
+        }
 
     </script>
 </head>
@@ -453,6 +476,11 @@
     <div class="container" id="promptContainer">
         <h1>Note Generator</h1>
         <textarea id="userPrompt" placeholder="Enter your prompt here..." oninput="autoResize(this)"></textarea>
+
+        <label for="imageInput" class="image-label">Upload Image:</label>
+        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+        <div id="imagePreview" style="margin-top:10px;"></div>
+
         <button id="generateNote">Generate Note</button>
         <button onclick="clearHistory()">clear</button>
         <p>
@@ -465,6 +493,10 @@
         <label for="modelSelect">Model:</label>
         <br>
         <select id="modelSelect">
+            <option value="GPT-4.1">GPT-4.1</option>
+            <option value="GPT-4.1 mini">GPT-4.1 mini</option>
+            <option value="GPT-4.1 nano">GPT-4.1 nano</option>
+            <option value="o4-mini">o4-mini</option>
             <option value="GPT-4o">GPT-4o</option>
             <option value="GPT-4">GPT-4</option>
             <option value="GPT-3.5">GPT-3.5</option>
@@ -483,8 +515,30 @@
         <button class="promptDefaultButton" onclick="setPrompt(prompt_default(1))">Prompt 1</button>
         <button class="promptDefaultButton" onclick="setPrompt(prompt_default(2))">Prompt 2</button>
         <button class="promptDefaultButton" onclick="setPrompt(prompt_default(3))">Prompt 3</button>
+
+        <br>
+        <label for="api_key">API Key:</label>
+        <br>
+        <input type="password" id="api_key" name="api_key" value="{{ session.get('api_key', '') }}">
+        <br>
+        <button onclick="saveApiKey()">Save API Key</button>
+        
     </div>
 </div>
+
+<script>
+    function saveApiKey() {
+        const apiKey = document.getElementById('api_key').value;
+        fetch(`/set-api-key/{{ session_id }}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({api_key: apiKey})
+        }).then(r => r.json()).then(data => {
+            alert(data.status);
+            keyUpdated = apiKey;
+        });
+    }
+</script>
 
 
 <script>    
@@ -503,6 +557,11 @@
         botMessage.classList.add('glow-effect');
         
         const user_input = document.getElementById('userPrompt').value;
+        // const image = document.getElementById('imageInput').files[0].value || null;
+        // alert(image)
+        // alert(imageBase64)
+        // botMessage.innerHTML = image;
+        // return;
         const prompt = document.getElementById('chatbotPrompt').value;
         const model = document.getElementById('modelSelect').value;
         var temperature = document.getElementById('temperature').value;
@@ -514,7 +573,7 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user_input: user_input, prompt: prompt, model: model, temperature: temperature })
+            body: JSON.stringify({ user_input: user_input, image_input: imageBase64, prompt: prompt, model: model, temperature: temperature, keyUpdated: keyUpdated }),
         });
 
         if (response.ok) {
@@ -549,9 +608,22 @@
     }
 </script>
 
-    <footer id="notewriterFooter">
+    <!-- <footer id="notewriterFooter">
         <p>&copy; 2024 NoteWriter. All rights reserved.</p>
         <p>Developed by HL</p>
+    </footer> -->
+    <footer id="notewriterFooter">
+        <p id="copyright"></p>
+        <p>Developed by HL</p>
     </footer>
+
+    <script>
+        const startYear = 2024;
+        const thisYear = new Date().getFullYear();
+        const yearString = (thisYear === startYear)
+          ? startYear
+          : `${startYear}-${thisYear}`;
+        document.getElementById('copyright').innerHTML = `&copy; ${yearString} NoteWriter. All rights reserved.`;
+    </script>
 </body>
 </html>

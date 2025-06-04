@@ -18,6 +18,35 @@ body {
     font-family: 'Times New Roman', Times, serif;
 }
 
+#imageInput {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    cursor: pointer;
+    transition:
+      border-color 0.3s ease,
+      background-color 0.3s ease;
+    /* background-color: #fff; */
+}
+
+.import-input:hover {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.import-input:focus {
+outline: none;
+border-color: #0056b3;
+}
+
+.import-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+
 /* Ensure sections print correctly without cutting them in half */
 @media print {
     section {
