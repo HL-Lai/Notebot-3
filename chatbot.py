@@ -37,12 +37,40 @@ def select_model(model_input):
         case 'GPT-3.5': return 'gpt-35-turbo'
         case _: return model_input
 
-def chatbot(message, model, prompt, temperature=0.7, history=history_default(), defining=False):
+def is_image_file(filepath):
+    if not os.path.isfile(filepath):
+        return False
+    mime, _ = mimetypes.guess_type(filepath)
+    if mime and mime.startswith('image/'):
+        return True
+    return False
+
+def process_image(image_path):
+    if image_path and is_image_file(image_path):
+        with open(image_path, "rb") as image_file:
+            mime, _ = mimetypes.guess_type(image_path)
+            base64_str = base64.b64encode(image_file.read()).decode()
+            image_data = f"data:{mime};base64,{base64_str}"
+        return image_data
+    else:
+        raise ValueError("The provided file is not a valid image.")
+
+def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), defining=False):
     model=select_model(model)
     temperature = 1 if model == 'o4-mini' else temperature
     
     history[0]['content'] = prompt
-    new_prompt = {"role": "user", "content": message}
+    if image:
+        # with open(image, "rb") as image_file:
+        #     image = "data:image/jpeg;base64," + base64.b64encode(image_file.read()).decode()
+        image = process_image(image)
+        content = []
+        if message:
+            content.append({"type": "text", "text": message})
+        content.append({"type": "image_url", "image_url": {"url": image}})
+        new_prompt = {"role": "user", "content": content}
+    else:
+        new_prompt = {"role": "user", "content": message}
     history.append(new_prompt)
     # completion = openai.ChatCompletion.create(engine="chatgpt", messages=history)
     response = client.chat.completions.create(model=model, messages=history, temperature=temperature)
