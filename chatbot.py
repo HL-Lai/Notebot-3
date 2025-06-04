@@ -60,7 +60,7 @@ def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpf
     temperature = 1 if model == 'o4-mini' else temperature
     
     history[0]['content'] = prompt
-    if image:
+    if (model.startswith('gpt') or model == 'o4-mini') and image:
         # with open(image, "rb") as image_file:
         #     image = "data:image/jpeg;base64," + base64.b64encode(image_file.read()).decode()
         image = process_image(image)
