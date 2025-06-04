@@ -20,7 +20,7 @@ if api_key is None:
 client = openai.AzureOpenAI(
     azure_endpoint=os.getenv('OPENAI_API_ENDPOINT', "https://api.hku.hk"),
     api_key=api_key,
-    api_version="2024-06-01"
+    api_version="2025-01-01-preview"
 )
 
 def history_default():
@@ -28,17 +28,24 @@ def history_default():
 
 def select_model(model_input):
     match model_input:
+        case 'GPT-4.1-nano': return 'gpt-4.1-nano'
+        case 'GPT-4.1-mini': return 'gpt-4.1-mini'
+        case 'GPT-4.1': return 'gpt-4.1'
+        case 'o4-mini': return 'o4-mini'
         case 'GPT-4o': return 'gpt-4o'
         case 'GPT-4': return 'gpt-4'
         case 'GPT-3.5': return 'gpt-35-turbo'
-        case _: return 'gpt-4o'
+        case _: return model_input
 
-def chatbot(message, model, prompt, temperature, history=history_default(), defining=False):
+def chatbot(message, model, prompt, temperature=0.7, history=history_default(), defining=False):
+    model=select_model(model)
+    temperature = 1 if model == 'o4-mini' else temperature
+    
     history[0]['content'] = prompt
     new_prompt = {"role": "user", "content": message}
     history.append(new_prompt)
     # completion = openai.ChatCompletion.create(engine="chatgpt", messages=history)
-    response = client.chat.completions.create(model=select_model(model), messages=history, temperature=temperature)
+    response = client.chat.completions.create(model=model, messages=history, temperature=temperature)
     answer = response.choices[0].message.content
     if defining: history.pop()
     elif not defining:
