@@ -1,5 +1,8 @@
-.env
+.*
 flask_session
 build
 dist
 __pycache__
+test.ipynb
+test.*
+*.spec

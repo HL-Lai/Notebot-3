@@ -5,7 +5,8 @@ import re
 import uuid
 import markdown
 import traceback
-from chatbot import chatbot, history_default, save_to_html, save_to_md
+from chatbot import chatbot, history_default
+from utils import save_to_html, save_to_md
 from dotenv import load_dotenv
 
 def md_to_html_for_input(text):
@@ -154,3 +155,6 @@ def set_api_key(session_id):
 if __name__ == '__main__':
     # app.run(debug=True)
     app.run()
+
+    # from waitress import serve
+    # serve(app, host="0.0.0.0", port=8081, threads=2)
