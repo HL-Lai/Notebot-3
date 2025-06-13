@@ -44,20 +44,25 @@ def process_image(image_path):
     else:
         raise ValueError("The provided file is not a valid image.")
 
-def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key='', defining=False):
-    # print(image[:20])
+def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key=None, api_endpoint=None, api_version=None, defining=False):
     model=select_model(model)
     temperature = 1 if model in ['o4-mini', 'DeepSeek-R1'] else temperature
     if api_key is None:
         key = input("Please input your api key: ").strip()
         api_key = clean_string(key)
 
-    load_dotenv()
+    if api_endpoint is None:
+        load_dotenv()
+        api_endpoint = os.getenv('OPENAI_API_ENDPOINT', "https://api.hku.hk")
+
+    if api_version is None:
+        api_version = "2025-01-01-preview"
+
 
     client = openai.AzureOpenAI(
-        azure_endpoint=os.getenv('OPENAI_API_ENDPOINT'),
+        azure_endpoint=api_endpoint,
         api_key=api_key,
-        api_version="2025-01-01-preview"
+        api_version=api_version
     )
     
     history[0]['content'] = prompt

@@ -45,7 +45,26 @@ border-color: #0056b3;
     color: #333;
     font-weight: 600;
     margin-right: 10px;
-  }
+}
+
+#apiContainer {
+    margin: 10px 0;
+    margin-top: 20px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+    border: 1.5px solid #b6b4b4;
+    border-radius: 5px;
+    background-color: #d9e8fcee
+}
+
+/* input tag inside apiContainer: <input> under <div id="apiContainer"> */
+#apiContainer input {
+    margin: 5px 0;
+    padding: 5px;
+    font-size: 11px;
+    width: 85%;
+}
+
 
 /* Ensure sections print correctly without cutting them in half */
 @media print {

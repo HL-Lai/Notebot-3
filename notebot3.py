@@ -72,12 +72,26 @@ def generate_note(session_id):
     model = data.get('model')
     temperature = data.get('temperature')
     keyUpdated = data.get('keyUpdated')
+    endpointUpdated = data.get('endpointUpdated')
+    versionUpdated = data.get('versionUpdated')
 
     if keyUpdated:
         api_key = keyUpdated
     else:
         load_dotenv()
         api_key = os.getenv('OPENAI_API_KEY')
+
+    if endpointUpdated:
+        api_endpoint = endpointUpdated
+    else:
+        load_dotenv()
+        api_endpoint = os.getenv('OPENAI_API_ENDPOINT')
+    
+    if versionUpdated:
+        api_version = versionUpdated
+    else:
+        load_dotenv()
+        api_version = os.getenv('OPENAI_API_VERSION')
 
     if user_input.strip().lower() == 'clear':
         history = history_default()
@@ -86,7 +100,7 @@ def generate_note(session_id):
         return jsonify({'note': ''})
     else:
         try:
-            history, note = chatbot(message=user_input, image=image_input, model=model, prompt=prompt, temperature=temperature, history=history, api_key=api_key)
+            history, note = chatbot(message=user_input, image=image_input, model=model, prompt=prompt, temperature=temperature, history=history, api_key=api_key, api_endpoint=api_endpoint, api_version=api_version)
             session['chat_history'] = history
             print(note)
             html_note = md_to_html_for_input(note)
@@ -132,25 +146,74 @@ def set_api_key(session_id):
     data = request.json
     api_key = data.get('api_key', '')
     session['api_key'] = api_key
+    api_endpoint = data.get('api_endpoint', '')
+    session['api_endpoint'] = api_endpoint
+    api_version = data.get('api_version', '')
+    session['api_version'] = api_version
 
     env_path = '.env'
-    updated = False
+    key_name = 'OPENAI_API_KEY'
+    endpoint_name = 'OPENAI_API_ENDPOINT'
+    version_name = 'OPENAI_API_VERSION'
+
+    # api_key_updated = api_endpoint_updated = False
     lines = []
+    api_key_found = False
+    api_endpoint_found = False
+    api_version_found = False
     if os.path.exists(env_path):
         with open(env_path, 'r') as f:
             for line in f:
-                if line.startswith('OPENAI_API_KEY = ') and not updated:
-                    lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
-                    updated = True
-                elif not line.startswith('OPENAI_API_KEY = '):
+                stripped_line = line.strip()
+                if stripped_line.startswith(f'{key_name} = '):
+                    if api_key != '':
+                        lines.append(f'{key_name} = "{api_key}"\n')
+                    else:
+                        lines.append(line)
+                    api_key_found = True
+                elif stripped_line.startswith(f'{endpoint_name} = '):
+                    if api_endpoint != '':
+                        lines.append(f'{endpoint_name} = "{api_endpoint}"\n')
+                    else:
+                        lines.append(line)
+                    api_endpoint_found = True
+                elif stripped_line.startswith(f'{version_name} = '):
+                    if api_version != '':
+                        lines.append(f'{version_name} = "{api_version}"\n')
+                    else:
+                        lines.append(line)
+                    api_version_found = True
+                else:
                     lines.append(line)
+
+                # if api_key != '' and line.startswith('OPENAI_API_KEY = ') and not api_key_updated:
+                #     lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
+                #     api_key_updated = True
+                # elif not line.startswith('OPENAI_API_KEY = '):
+                #     lines.append(line)
+                # if api_endpoint != '' and line.startswith('OPENAI_API_ENDPOINT = ') and not api_endpoint_updated:
+                #     lines.append(f'OPENAI_API_ENDPOINT = "{api_endpoint}"\n')
+                #     api_endpoint_updated = True
+                # elif not line.startswith('OPENAI_API_ENDPOINT = '):
+                #     lines.append(line)
             # If we never found the key, add it at the end
-    if not updated:
-        lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
+
+    if not api_key_found and api_key != '':
+        lines.append(f'{key_name} = "{api_key}"\n')
+    if not api_endpoint_found and api_endpoint != '':
+        lines.append(f'{endpoint_name} = "{api_endpoint}"\n')
+    if not api_version_found and api_version != '':
+        lines.append(f'{version_name} = "{api_version}"\n')
+        
+    # if not api_key_updated or not api_endpoint_updated:
+    #     if api_key != '':
+    #         lines.append(f'OPENAI_API_KEY = "{api_key}"\n')
+    #     if api_endpoint != '':
+    #         lines.append(f'OPENAI_API_ENDPOINT = "{api_endpoint}"\n')
     with open(env_path, 'w') as f:
         f.writelines(lines)
 
-    return jsonify({'status': 'API Key saved'})
+    return jsonify({'status': 'API Info saved'})
 
 if __name__ == '__main__':
     # app.run(debug=True)

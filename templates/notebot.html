@@ -517,11 +517,22 @@
         <button class="promptDefaultButton" onclick="setPrompt(prompt_default(3))">Prompt 3</button>
 
         <br>
-        <label for="api_key">API Key:</label>
-        <br>
-        <input type="password" id="api_key" name="api_key" value="{{ session.get('api_key', '') }}">
-        <br>
-        <button onclick="saveApiKey()">Save API Key</button>
+        <div id="apiContainer">
+            <h3>API Settings</h3>
+            <label for="api_key">API Key:</label>
+            <br>
+            <input type="password" id="api_key" name="api_key" value="{{ session.get('api_key', '') }}">
+            <br>
+            <label for="api_endpoint">API Endpoint:</label>
+            <br>
+            <input type="text" id="api_endpoint" name="api_endpoint" placeholder="https://api.openai.com/v1/chat/completions" value="{{ session.get('api_endpoint', '') }}">
+            <br>
+            <label for="api_version">API Version:</label>
+            <br>
+            <input type="text" id="api_version" name="api_version" placeholder="2025-01-01-preview" value="{{ session.get('api_version', '') }}">
+            <br>
+            <button onclick="saveApiKey()">Save API Info</button>
+        </div>
         
     </div>
 </div>
@@ -529,13 +540,17 @@
 <script>
     function saveApiKey() {
         const apiKey = document.getElementById('api_key').value;
+        const apiEndpoint = document.getElementById('api_endpoint').value;
+        const apiVersion = document.getElementById('api_version').value;
         fetch(`/set-api-key/{{ session_id }}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({api_key: apiKey})
+            body: JSON.stringify({api_key: apiKey || '', api_endpoint: apiEndpoint || '', api_version: document.getElementById('api_version').value || ''})
         }).then(r => r.json()).then(data => {
             alert(data.status);
             keyUpdated = apiKey;
+            endpointUpdated = apiEndpoint;
+            versionUpdated = apiVersion;
         });
     }
 </script>
