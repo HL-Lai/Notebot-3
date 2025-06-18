@@ -1,7 +1,11 @@
 import os
 import re
+import base64
 import openai
+import mimetypes
 from dotenv import load_dotenv
+
+load_dotenv()
 
 def clean_string(input_string):
     # Use regex to keep only alphanumeric characters
@@ -25,39 +29,51 @@ def select_model(model_input):
 def is_image_file(filepath):
     if not os.path.isfile(filepath):
         return False
-    import mimetypes
     mime, _ = mimetypes.guess_type(filepath)
     if mime and mime.startswith('image/'):
         return True
     return False
 
-def process_image(image_path):
-    if isinstance(image_path, str): # assume base64 already
-        image_data = f"data:image/;base64,{image_path}"
-        return image_data
-    elif image_path and is_image_file(image_path):
-        with open(image_path, "rb") as image_file:
-            mime, _ = mimetypes.guess_type(image_path)
-            base64_str = base64.b64encode(image_file.read()).decode()
-            image_data = f"data:{mime};base64,{base64_str}"
-        return image_data
-    else:
-        raise ValueError("The provided file is not a valid image.")
+def process_image(image_input):
+    """
+    image_input may be:
+      • a filesystem path to an image
+      • a data URI (e.g. "data:image/png;base64,....")
+      • a raw base64 string (no data: prefix)
+    """
+    # 1) If it’s an existing file on disk and looks like an image:
+    if isinstance(image_input, str) and os.path.isfile(image_input) and is_image_file(image_input):
+        mime, _ = mimetypes.guess_type(image_input)
+        with open(image_input, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("ascii")
+        return f"data:{mime};base64,{b64}"
+
+    # 2) If it’s already a full data‐URI, just return it
+    if isinstance(image_input, str) and image_input.startswith("data:"):
+        return image_input
+
+    # 3) If it’s raw base64 (no “data:”), slap on a default mime
+    _BASE64_ONLY = re.compile(r'^[A-Za-z0-9+/]+={0,2}$')
+    if isinstance(image_input, str) and _BASE64_ONLY.fullmatch(image_input):
+        # you may want to pass in the desired mime type
+        # default_mime = "image/png"
+        return f"data:image/;base64,{image_input}"
+
+    raise ValueError("The provided input is not a valid image file or base64 string.")
 
 def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key=None, api_endpoint=None, api_version=None, defining=False):
     model=select_model(model)
     temperature = 1 if model in ['o4-mini', 'DeepSeek-R1'] else temperature
     if api_key is None:
-        key = input("Please input your api key: ").strip()
-        api_key = clean_string(key)
-
+        api_key = os.getenv('OPENAI_API_KEY')
+        if api_key is None:
+            api_key = clean_string(input("Please input your api key: ").strip())
+    
     if api_endpoint is None:
-        load_dotenv()
         api_endpoint = os.getenv('OPENAI_API_ENDPOINT', "https://api.hku.hk")
 
     if api_version is None:
-        api_version = "2025-01-01-preview"
-
+        api_version = os.getenv('OPENAI_API_VERSION', "2025-01-01-preview")
 
     client = openai.AzureOpenAI(
         azure_endpoint=api_endpoint,
@@ -89,12 +105,9 @@ def chatbot(message=False, image=False, model="gpt-4.1", prompt="You are a helpf
 ##################################################################################################
 
 def main(message=False, image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key='', defining=False):
-    chatbot(message=message, image=image, model=model, prompt=prompt, temperature=temperature, history=history, api_key=api_key, defining=defining)
+    history, answer = chatbot(message=message, image=image, model=model, prompt=prompt, temperature=temperature, history=history, api_key=api_key, defining=defining)
+    print(answer)
 
 if __name__ == "__main__":
-    api_key = os.getenv('OPENAI_API_KEY', None)
-    if api_key is None:
-        key = input("Please input your api key: ").strip()
-        api_key = clean_string(key)
-
-    main(message="Hi!", image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key='', defining=False)
+    # main(message="Hi!", image=False, model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key=None, defining=False)
+    main(message="What is this?", image="test.jpg", model="gpt-4.1", prompt="You are a helpful assistant who helps to write notes.", temperature=0.7, history=history_default(), api_key=None, defining=False)
