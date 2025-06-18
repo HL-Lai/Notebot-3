@@ -43,7 +43,7 @@ OPENAI_API_KEY = {your_key}
 
 ## Usage
 
-*   Enter your API key via settings (not required if `.env` has been set).
+*   Enter your API key, endpoint, and version via "Settings" (not required if `.env` has been set).
 *   Enter the prompt and adjust temperature via settings.
 *   Input your note topic or instructions and let Notebot generate notes for you.  Images are also allowed.
 *   Save your notes as needed.
